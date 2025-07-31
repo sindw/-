@@ -1,16 +1,16 @@
 auto.waitFor();
 console.show();
-//权限获取
-if (!requestScreenCapture()) {
-    putout('没有授予 Hamibot 屏幕截图权限');
-    hamibot.exit();
-}
+// //权限获取
+// if (!requestScreenCapture()) {
+//     putout('没有授予 Hamibot 屏幕截图权限');
+//     hamibot.exit();
+// }
 sleep_second(2);
 
 const test_view_num = 6;
 
 function putout(str) {
-    console.log(str);
+    print(str);
 }
 
 function exists_or_not(str) {//判断str是否出现
@@ -21,34 +21,6 @@ function exists_or_not(str) {//判断str是否出现
         }
     }
     return 0;//如果没有找到就说明没进去
-}
-
-function judge_by_ocr(x, y, x_x, y_y, text) {//截图坐标并判断是否有文字str
-    x_x -= x;
-    y_y -= y;
-    var src = captureScreen();
-    var clip = images.clip(src, x, y, x_x, y_y);
-    for (let i = 0; i < 30; i++) {
-        var the_text = ocr.recognizeText(clip);
-        var isExist = the_text.includes(text);
-        if (isExist)
-            return 1;
-    }
-    return 0;
-}
-
-function find_color(x, y, x_x, y_y, color) {//找颜色
-    x_x -= x;
-    y_y -= y;
-    var src = captureScreen();
-    var clip = images.clip(src, x, y, x_x, y_y);
-    var judge = images.findColor(clip, color);
-    if (judge) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
 }
 
 function wait_for_text(str) {//等待十秒是否某个文字出现
@@ -79,6 +51,12 @@ function launch_app() {
     let i = 0;
     putout('正在启动小米社区');
     while (!open_it()) {//如果启动失败
+        print('尝试返回');
+        for (let i = 0; i < 10; i++) {
+            back();
+            sleep_second(0.1);
+        }
+
         putout('重新启动小米社区');
         i++;
         if (i >= 9) {//启动10次还没有成功
@@ -100,88 +78,229 @@ sleep_second(3);
 
 //拔萝卜
 if (text("每日任务").exists()) {//成功进入签到页面
-    console.log('成功进入签到页面');
+    print('成功进入签到页面');
 }
 else {
-    console.log('重新进入签到页面');
+    print('重新进入签到页面');
+    back();//返回
+    sleep_second(2);
     desc('签到').click();//点击签到
     sleep_second(3);
 }
 sleep_second(1);
-className("android.widget.Button").text("去看看").findOne().click()//拔萝卜
+print('拔萝卜');
+className("android.widget.Button").desc("去看看").findOnce().click();//拔萝卜
+sleep_second(1);
+if (className("android.widget.Button").desc("去看看").exists()) {//如果拔萝卜失败
+    print('拔萝卜失败,重新拔萝卜');
+    className("android.widget.Button").desc("去看看").findOnce().click();//拔萝卜
+}
 sleep_second(1);
 
-console.log('返回签到页面');
+print('返回签到页面');
 for (let i = 0; i < 10; i++) {//返回签到页面
     if (text("每日任务").exists()) {
-        console.log('成功返回签到页面');
+        print('成功返回签到页面');
         break;
     }
     back();
     sleep_second(2);
 }
 
+var judge = 0;
 
-//去浏览
-if (text("去浏览").exists()) {
+function go_to_view() {
+    if (judge) {
+        return;
+    }
 
-    console.log('点击去浏览');
-    text("去浏览").click();
+    //此时在签到页面
+    if (!desc("去浏览").exists()) {
+        judge = 1;
+        return;
+    }
+    print('点击去浏览');
+    desc("去浏览").click();
     sleep_second(2);
 
-    console.log('随便点击一个帖子');
-    //获取点赞坐标,然后往上移一点就是帖子
-    var coordinate = className("android.widget.ImageView").depth(18).desc('赞').findOnce().bounds();
-    click(coordinate.centerX(), coordinate.centerY() - 100);
+    print('随便点击一个帖子');
+    //选一个帖子的控件,然后点击
+    var a = className("android.widget.LinearLayout").depth(16).row(-1).drawingOrder(1);
+    if (a.exists()) {
+        a.findOnce().click();//点击
+        sleep_second(2);
+        if (a.exists()) {//如果还存在
+            a.findOnce().click();//点击
+            sleep_second(2);
+        }
+    }
 
-    sleep_second(1);
-    swipe(600, 2000, 600, 500, 500);//滑动
-    console.log('等待浏览完成');
-    sleep_second(12);
-    console.log('浏览完成,正在返回签到页面');
+    let appear_in_view = 0;//控件是否出现在手机内
+    for (let i = 0; i < 15; i++) {
+        var a = desc('热门');//评论控件
+        if (!a.exists()) {//如果没有热门控件
+            swipe(600, 2000, 600, 500, 500);//滑动
+            sleep_second(1);
+            continue;
+        }
+        var coordinate = a.findOnce().bounds();//控件坐标
+        if (coordinate.centerY() >= 0 && coordinate.centerY() <= device.height) {//控件在屏幕内
+            appear_in_view = 1;
+            break;
+        }
+    }
+
+    if (appear_in_view == 1) {
+        judge = 1;
+        print('等待12S');
+        sleep_second(12);
+        print('浏览完成,正在返回签到页面');
+    }
+
     back();
     sleep_second(2);
     desc('签到').click();//点击签到
-    console.log('成功返回签到页面')
+    print('成功返回签到页面');
     sleep_second(2);
+
+    if (judge)
+        return;
+    go_to_view();
+}
+
+//去浏览
+if (desc("去浏览").exists()) {
+    judge = 0;
+    go_to_view();
 }
 else {//签到页面没有去浏览
-    console.log('浏览完成');
+    print('浏览完成');
 }
 
 
-//抽奖
-textContains("去参与").click();
-sleep_second(2);
-var unlockable;
-while (textContains("当前可解锁").exists()) {
-    console.log('当前存在可解锁');
-    unlockable = findColor(captureScreen(), "#fde1f6");//解锁的颜色
-    while (unlockable == null) {//找不到这个颜色
-        console.log('滑动');
-        swipe(548, 1997, 800, 280, 500);//滑动至下一个可解锁区块
-        unlockable = findColor(captureScreen(), "#fde1f6");//重置颜色
-        sleep(500);
+//活动
+
+//微信签到
+const { radio1 } = hamibot.env;//yes代表是 no代表否
+const { radio2 } = hamibot.env;//yes代表是 no代表否
+var go_to_wechat = desc("去微信");
+if (radio1 == 'yes' && go_to_wechat.exists()) {
+    print('微信签到');
+    wechat_sign_in();
+}
+function wechat_sign_in() {
+    if (!go_to_wechat.exists()) {//没有去微信控件
+        return;
     }
-    click(unlockable.x, unlockable.y);
-    sleep(1000);
-    back();
-    textContains("去参与").click();
-    sleep(1000);
-}
-back();
+    print('点击去微信');
+    go_to_wechat.findOnce().click();
+    sleep_second(5);
 
+    var b = text('去签到');
+    var num_judge = 0;
+    for (let i = 0; i < 100; i++) {
+        if (b.exists()) {
+            b.click();
+            print('微信签到');
+            num_judge = 1;
+            sleep_second(2);
+            break;
+        }
+        else if (text('已签到').exists()) {
+            print('已经签到');
+            num_judge = 1;
+            break;
+        }
+
+        sleep_second(0.1);
+    }
+
+    if (num_judge == 0) {//微信签到失败
+        print('微信签到失败');
+        if (radio2 == 'yes') {//胡点一通
+            print('尝试点击屏幕');
+            var x = device.width / 2;
+            var y = device.height / 4;
+            while (y < device.height / 4 * 3) {
+                if (x > device.width) {
+                    x = device.width / 2;
+                    y += 100;
+                }
+                else {
+                    click(x, y);
+                    x += 100;
+                }
+                sleep_second(0.1);
+            }
+            sleep_second(2);
+        }
+    }
+
+    num_judge = 0;
+    for (let i = 0; i < 10; i++) {
+        if (text("查看成长值规则").exists()) {
+            print('成功返回签到页面');
+            num_judge = 1;
+            break;
+        }
+        back();
+        sleep_second(1);
+    }
+
+    if (num_judge == 0) {
+        print('返回签到页面失败');
+        launch_app();
+        desc('签到').click();//点击签到
+        sleep_second(3);
+    }
+
+    return;
+}
+
+//去参加控件
+var go_to_lottery_ui = className("android.widget.Button").desc("去参加");
+var unlockable = className("android.widget.TextView").depth(14).text("可解锁");
+var judge = 0;
+function go_to_lottery() {
+    go_to_lottery_ui.click();//进入抽奖页面
+    sleep_second(2);
+
+    if (judge) {
+        return;
+    }
+
+    if (!unlockable.exists()) {
+        print('抽奖次数已用完');
+        back();//返回签到页面
+        judge = 1;
+        return;
+    }
+
+    if (unlockable.exists()) {
+        print('抽奖一次');
+        unlockable.findOnce().click();
+        sleep_second(1);
+        back();//返回签到页面
+    }
+
+    go_to_lottery();//递归
+}
+
+if (go_to_lottery_ui.exists()) {
+    print('参加活动');
+    go_to_lottery();
+    sleep_second(2);
+}
 
 //签到
 if (className("android.widget.TextView").text("已签到").exists()) {
-    console.log('已签到');
+    print('已签到');
     hamibot.exit();
 }
-else {
-    console.log('点击立即签到');
+else if (textContains("立即签到").exists()) {
+    print('点击立即签到');
     textContains("立即签到").click();
-    console.log('请进行滑块验证');
-    device.vibrate(2000);
+    print('请进行滑块验证');
 }
 
 

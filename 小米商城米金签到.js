@@ -1,259 +1,324 @@
 auto.waitFor();
 console.show();
 //权限获取
-if (!requestScreenCapture()) {
-    putout('没有授予 Hamibot 屏幕截图权限');
-    hamibot.exit();
-}
+// if (!requestScreenCapture()) {
+//     print('没有授予 Hamibot 屏幕截图权限');
+//     hamibot.exit();
+// }
 sleep_second(2);
-
-const test_view_num = 6;
-
-function putout(str) {
-    console.log(str);
-}
-
-function exists_or_not(str) {//判断str是否出现
-    for (let i = 0; i <= 10; i++) {
-        sleep(500);
-        if (str) {
-            return 1;
-        }
-    }
-    return 0;//如果没有找到就说明没进去
-}
-
-function judge_by_ocr(x, y, x_x, y_y, text) {//截图坐标并判断是否有文字str
-    x_x -= x;
-    y_y -= y;
-    var src = captureScreen();
-    var clip = images.clip(src, x, y, x_x, y_y);
-    for (let i = 0; i < 30; i++) {
-        var the_text = ocr.recognizeText(clip);
-        var isExist = the_text.includes(text);
-        if (isExist)
-            return 1;
-    }
-    return 0;
-}
-
-function find_color(x, y, x_x, y_y, color) {//找颜色
-    x_x -= x;
-    y_y -= y;
-    var src = captureScreen();
-    var clip = images.clip(src, x, y, x_x, y_y);
-    var judge = images.findColor(clip, color);
-    if (judge) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
-}
-
-function wait_for_text(str) {//等待十秒是否某个文字出现
-    for (let i = 0; i < 20; i++) {
-        if (textContains(str).exists())
-            return 1;
-        sleep(500);
-    }
-    return 0;
-}
-
-
-function open_it() {
-    app.launchApp('小米商城');
-    sleep_second(3);
-    if (id('skip').textContains('跳过').exists()) {//如果有跳过按钮
-        var coordinate = id('skip').textContains('跳过').findOnce().bounds();//坐标
-        click(coordinate.centerX(), coordinate.centerY());
-    }
-    sleep_second(5);
-    if (className("android.widget.TextView").text("我的").exists())
-        return 1;//如果右下角是出现'我的',说明打开成功
-    else
-        return 0;
-}
-
-function launch_app() {
-    let i = 0;
-    putout('正在启动小米商城');
-    while (!open_it()) {//如果启动失败
-        putout('重新启动小米商城');
-        i++;
-        if (i >= 9) {//启动10次还没有成功
-            putout('小米商城启动10次还未成功,请检查权限是否启动并反馈原因')
-            hamibot.exit();
-        }
-    }
-    putout('成功启动小米商城');
-}
 
 function sleep_second(t) {//按秒数等待
     sleep(t * 1000);
 }
 
-launch_app();
+const test_view_num = 10;
 
-if (className("android.widget.FrameLayout").depth(1).exists()) {//广告
-    putout('关闭广告');
-    back();
-    sleep_second(1);
-}
-
-//点击我的
-let judge_mine_open = 0;
-putout('点击我的');
-var coordinate = className("android.widget.TextView").text("我的").findOnce().bounds();
-click(coordinate.centerX(), coordinate.centerY());//点击我的
-sleep_second(5);
-
-//点击下次再说
-if (judge_by_ocr(device.width * 0.2, device.height * 0.6, device.width * 0.5, device.height * 0.68, '次再')) {//出现下次再说
-    putout('点击下次再说');
-    var x = device.width * 0.2, x_x = device.width * 0.5;
-    var y = device.height * 0.6, y_y = device.height * 0.68;
-    while (judge_by_ocr(device.width * 0.2, device.height * 0.6, device.width * 0.5, device.height * 0.68, '次再')) {
-        click(x, y);
-        sleep_second(1);
-        if (x <= x_x) {
-            x += 100;
-        }
-        else {
-            x = device.width * 0.2;
-            y += 50;
-        }
-        if (y > y_y) {//越界了还没点到，就退出
-            putout('越界了还没点到');
-            hamibot.exit();
-            break;
-        }
-    }
-    judge_mine_open = 1;
-}
-else {
-    if (className("android.widget.TextView").text("待付款").exists())
-        judge_mine_open = 1;
-    else
-        judge_mine_open = 0;
-
-    if (!exists_or_not(className("android.widget.TextView").text("待付款").exists())) {//如果没有成功点击我的
-        putout('重新点击我的');
-        var coordinate = className("android.widget.TextView").text("我的").findOnce().bounds();
-        click(coordinate.centerX(), coordinate.centerY());//点击我的
-        if (className("android.widget.TextView").text("待付款").exists())
-            judge_mine_open = 1;
-        else
-            judge_mine_open = 0;
-    }
-}
-putout('成功点击我的');
-sleep_second(5);
-
-
-//点击米金
-putout('点击米金');
-console.hide();//先隐藏控制台
-sleep_second(1);
-var mikin_coordinate = className("android.widget.TextView").text("米金").findOnce().bounds();//坐标
-click(mikin_coordinate.centerX(), mikin_coordinate.centerY());//点击米金
-console.show();//再显示控制台
-sleep_second(5);//等两秒
-if (className("android.widget.TextView").text("米金商城").exists()) {
-    putout('成功进入米金商城');
-}
-else {
-    putout('重新进入米金商城');
-
-    console.hide();//先隐藏控制台
-    sleep_second(1);
-    var mikin_coordinate = className("android.widget.TextView").text("米金").findOnce().bounds();//坐标
-    click(mikin_coordinate.centerX(), mikin_coordinate.centerY());//点击米金
-    console.show();//再显示控制台
-
+function open() {//启动
+    app.launchApp('小米商城');
     sleep_second(5);
+    if (id('skip').textContains('跳过').exists()) {//已经打开了
+        var coordinate = id('skip').textContains('跳过').findOnce().bounds();//坐标
+        click(coordinate.centerX(), coordinate.centerY());
+        print('跳过');
+        sleep_second(3);
+        return 1;
+    }
+
+    if (className("android.widget.TextView").text("我的").exists())
+        return 1;
+    return 0;
 }
+
+function launch_app(str) {
+    let i = 0;
+    if (className("android.widget.TextView").text("我的").exists()) {
+        print('已启动');
+        return;
+    }
+    print('启动' + str);
+    while (!open()) {//如果启动失败
+        print('尝试返回');
+        for (let i = 0; i < 10; i++) {
+            back();
+            sleep_second(0.1);
+        }
+
+        print('重新启动' + str);
+        i++;
+        if (i >= 4) {//启动5次还没有成功
+            print(str + '启动5次还未成功');
+            hamibot.exit();
+        }
+        sleep_second(1);
+    }
+    print('成功启动' + str);
+}
+
+launch_app('小米商城');
+
+
+//点击签到
+var judge = 0, num = 0;
+function click_sign() {
+    if (judge) {
+        return;
+    }
+
+    //确认是否在米金商城页面控件
+    var mikin_store = className("android.widget.TextView").text("米金商城");
+    if (mikin_store.exists()) {
+        print('成功进入米金商城');
+        judge = 1;
+        return;
+    }
+
+    //从"主页"进入米金商城
+
+    //主页签到按钮控件
+    var sign = className('android.widget.ImageView').depth(12).drawingOrder(4).row(-1);
+    if (sign.exists()) {
+        print('进入米金商城');
+        sign.findOnce().click();
+        sleep_second(3);
+    }
+
+
+    //从"我的"进入米金商城
+
+    // //点击我的
+    // //我的 文字控件
+    // var mine = className("android.widget.TextView").text("我的");
+    // var coordinate = mine.findOnce().bounds();//坐标
+    // click(coordinate.centerX(), coordinate.centerY());//点击
+    // print('点击我的');
+    // sleep_second(3);
+
+    // //点击米金商城
+    // //米金 文字控件 深绿色 点击需要父控件
+    // var mikin = className("android.widget.TextView").text("米金").depth(23).drawingOrder(2).row(-1);
+    // if (mikin.exists()) {
+    //     var a = mikin.findOnce();//找到控件
+    //     var b = a.parent();//找到父控件
+    //     if (b != null) {
+    //         b.click();//点击
+    //         print('点击米金商城');
+    //         sleep_second(3);
+    //     }
+    // }
+
+
+
+    num++;
+    if (num >= 5 && num <= 10) {//如果5次都没有进入米金商城
+        print('进入米金商城失败,重新启动小米商城');
+
+        //退出小米商城
+        print('退出小米商城');
+        for (let i = 0; i < 10; i++) {
+            back();
+            sleep_second(0.5);
+        }
+
+        launch_app('小米商城');
+    }
+    else if (num > 10) {//如果10次都没有进入米金商城
+        print('进入米金商城失败,请检查权限是否启动并反馈原因');
+        hamibot.exit();
+    }
+    click_sign();
+}
+click_sign();
 
 
 //开始做米金任务
 
-//进入米金任务
+//进入任务
+judge = 0;
 function click_mikin_mission() {//需要在米金商城页面
-    var coordinate = className('android.view.ViewGroup').depth('14').drawingOrder('2').findOnce().bounds();
-    longClick(coordinate.left + (coordinate.right - coordinate.left) * 0.85, coordinate.centerY());
-}
 
+    var get_all = text('全部领取');//购买物品米金
+    if (get_all.exists()) {
+        var coordinate = get_all.findOnce().bounds();//坐标
+        click(coordinate.centerX(), coordinate.centerY());//点击
+        print('领取米金');
+        sleep_second(2);
+    }
 
-//点击米金任务
-putout('点击米金任务');
-//点击米金任务页面
-click_mikin_mission();
-sleep_second(5);
+    //已经打开任务页面
+    if (judge) {
+        return;
+    }
 
-if (!exists_or_not(className("android.widget.TextView").text("做任务赢福利").exists())) {//如果没有进入米金任务页面
-    putout('重新进入米金任务页面');
+    if (className("android.widget.TextView").text("做任务赢福利").exists()) {
+        print('成功进入米金任务页面');
+        judge = 1;
+        return;
+    }
+
+    var a = className('android.view.ViewGroup').depth('15').drawingOrder('2').findOnce();//米金任务按钮 紫色
+    if (a == null) {
+        return;
+    }
+    var b = a.child(0);//米金任务按钮的子控件 黄色
+    if (b == null) {
+        return;
+    }
+    var c = b.child(0);//米金任务按钮的子控件的子控件 绿色
+    if (c == null) {
+        return;
+    }
+    c.click();//点击米金任务按钮
+    print('点击米金任务');
+    sleep_second(2);
+
     click_mikin_mission();
-    sleep_second(5);
+
+    return;
 }
-putout('成功进入米金任务页面');
+click_mikin_mission();
 
 //签到
-if (className("android.widget.TextView").text("已签到").exists()) {//已经签到过了
-    putout('已经签到过了');
-}
-else {//还没有签到
-    putout('签到');
-    var coordinate = className("android.widget.TextView").text("立即签到").findOnce().bounds();
-    click(coordinate.centerX(), coordinate.centerY());
-    sleep_second(5);
-    if (className("android.widget.TextView").text("签到得米金").exists()) {
-        click(604, 1863);//点击“知道了”
-        sleep_second(5);
+judge = 0;
+function do_sign() {
+    if (judge) {
+        return;
     }
+
+    if (className("android.widget.TextView").text("已签到").exists()) {//已经签到过了
+        print('已签到');
+        judge = 1;
+        return;
+    }
+
+    var sign_in = className("android.widget.TextView").text("立即签到");
+    if (sign_in.exists()) {
+        print('开始签到');
+        var coordinate = className("android.widget.TextView").text("立即签到").findOnce().bounds();
+        click(coordinate.centerX(), coordinate.centerY());
+        sleep_second(2);
+
+        //点击知道了
+        var a = className("android.view.ViewGroup").clickable(true).depth(8);
+        if (a.exists()) {
+            print('点击知道了')
+            a.findOnce().click();
+            sleep_second(2);
+        }
+    }
+
+    do_sign();
+
+    return;
 }
+do_sign();
+
 
 //开始做米金任务
-for (let j = 0; j < test_view_num; j++) {
-    if (!text("去浏览").exists()) {//如果没有任务
-        putout('没有任务');
+judge = 0, num = 0;
+function do_mikin_task() {
+    if (judge || num >= test_view_num) {
+        return;
+    }
+
+    var go_to_view = text("去浏览");
+    if (!go_to_view.exists()) {//没有任务
+        print('没有任务');
+        judge = 1;
+        return;
+    }
+
+    judge = 1;
+
+    var a = go_to_view.find();//任务的集合
+    for (let i = 0; i < a.size(); i++) {//查找可以点击的任务
+        //任务本身控件深绿色
+
+        var b = a[i].parent();//任务的父控件 绿色
+        if (b == null) {
+            continue;
+        }
+
+        var c = b.parent();//任务的父控件的父控件 黄色
+        if (c == null) {
+            continue;
+        }
+
+        var d = c.parent();//任务的父控件的父控件的父控件 紫色
+        if (d == null) {
+            continue;
+        }
+
+        var e = d.parent();//任务的父控件的父控件的父控件的父控件 橙色
+        if (e == null) {
+            continue;
+        }
+
+        var f = e.child(0);//任务的父控件的父控件的父控件的父控件的子控件1 紫色
+        if (f == null) {
+            continue;
+        }
+        if (f.text().includes("钱包")) {//如果包含钱包两个字
+            continue;
+        }
+
+        c.click();//点击任务 需要用紫色控件点击
+        print('开始浏览');
+        judge = 0;
         break;
     }
-    putout('开始浏览');
-    var coordinate = text("去浏览").findOnce().bounds();//坐标
-    click(coordinate.centerX(), coordinate.centerY());//浏览
+
+    if (judge) {//没有找到可以点击的任务
+        print('没有任务');
+        return;
+    }
 
     sleep_second(10);//浏览10秒
-    let judge = 0;//判断是否为软件内浏览
-    //等待浏览完成(此时没有回到签到页面)
+
+    //等待浏览完成(此时没有回到签到页面) judge = 0
     for (let i = 0; i < 10; i++) {
         if (className("android.widget.TextView").text("领取奖励").exists()) {//如果浏览完成
-            putout('浏览完成');
-            back();
-            sleep_second(5);
+            print('浏览完成');
             judge = 1;
+
+            //返回
+            print('返回');
+            for (let j = 0; j < 10; j++) {
+                if (className("android.widget.TextView").text("米金商城").exists()) {//在米金商城内
+                    break;
+                }
+                back();
+                sleep_second(3);
+            }
+
             break;
         }
-        sleep_second(1);
+        sleep_second(2);
     }
-    if (!judge) {//如果不是软件内浏览
-        putout('返回小米商城');
+
+    if (!judge) {//如果没有浏览完成 说明不是软件内浏览
+        print('退出')
+
+        for (let i = 0; i < 10; i++) {
+            if (className("android.widget.TextView").text("米金商城").exists())
+                break;
+            back();
+            sleep_second(1);
+        }
+
+        print('返回小米商城');
         app.launchApp('小米商城');//返回到软件内
-        sleep_second(5);
+        sleep_second(3);
+
     }
 
-    while (className("android.widget.TextView").text("领取奖励").exists()) {
-        back();
-        sleep_second(5);
-    }
+    judge = 0;
+    click_mikin_mission();//重新打开米金任务页面
+    judge = 0;
+    num++;
+    do_mikin_task();//递归
 
-    if (className("android.widget.TextView").text("米金商城").exists()) {//重新打开米金任务页面
-        putout('重新打开米金任务页面');
-        click_mikin_mission();
-        sleep_second(5);
-    }
+    return;
 }
-
-device.vibrate(2000);
-
+do_mikin_task();
 
 hamibot.exit();

@@ -11,7 +11,106 @@ function sleep_second(t) {//按秒数等待
     sleep(t * 1000);
 }
 
-app.launchApp('虎牙直播');
+
+//---------------------------------------------------------------------------------------------------------------------
+//启动
+function open() {
+    app.launchApp('虎牙直播');
+    sleep_second(5);
+    if (id('skip').textContains('跳过').exists()) {//已经打开了
+        var coordinate = id('skip').textContains('跳过').findOnce().bounds();//坐标
+        click(coordinate.centerX(), coordinate.centerY());
+        print('跳过');
+        sleep_second(3);
+        return 1;
+    }
+
+    if (mine.exists())
+        return 1;
+    return 0;
+}
+
+function launch_app(str) {
+    let i = 0;
+    if (mine.exists()) {
+        print('已启动');
+        return;
+    }
+    print('启动' + str);
+    while (!open()) {//如果启动失败
+        print('尝试返回');
+        for (let i = 0; i < 10; i++) {
+            back();
+            sleep_second(0.1);
+        }
+
+        print('重新启动' + str);
+        i++;
+        if (i >= 4) {//启动5次还没有成功
+            print(str + '启动5次还未成功');
+            hamibot.exit();
+        }
+        sleep_second(1);
+    }
+    print('成功启动' + str);
+}
+
+//打开虎牙
+var mine = className("android.widget.TextView").text("我的");//“我的”控件
+launch_app('虎牙直播');
+
+//---------------------------------------------------------------------------------------------------------------------
+
+//点击我的
+var mission_center = className("android.view.View").desc("任务中心");//任务中心控件
+function click_mine() {
+    for(let i = 0; i < 10; i++){
+        if(mission_center.exists()){
+            return 1;//点击成功
+        }
+        
+        //点击需要 “我的” 父控件
+        var mine_parent = mine.findOnce().parent();
+        mine_parent.click();
+
+        sleep_second(1);
+    }
+
+    hamibot.exit();//点击失败直接退出
+}
+
+//点击任务中心
+var coin = className("android.widget.TextView").text("金币").depth(15);//金币控件
+function click_mission_center() {
+    for(let i = 0; i < 10; i++){
+        if(coin.exists()){
+            return 1;//点击成功
+        }
+
+        //坐标点击
+        var coordinate = mission_center.findOnce().bounds();//坐标
+        click(coordinate.centerX(), coordinate.centerY());
+
+        sleep_second(1);
+    }
+
+    hamibot.exit();//点击失败直接退出
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+//开始做任务
+
+//做任务
+var go_to_finish = className("android.widget.Button").text("去完成").clickable(true).depth(15);//去完成控件
+function do_task(){
+
+}
+
+//
+
+
+
 
 //领取奖励
 var ling_qu = className('android.widget.Button').text('领取');
